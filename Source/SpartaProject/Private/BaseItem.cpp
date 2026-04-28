@@ -1,7 +1,6 @@
 #include "BaseItem.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystemComponent.h"
 
 ABaseItem::ABaseItem()
 {
@@ -29,26 +28,32 @@ void ABaseItem::OnItemOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (OtherActor && OtherActor != this)
+	if (!OtherActor || OtherActor == this)
 	{
-		ActivateItem(OtherActor);
+		return;
 	}
+
+	if (!OtherActor->ActorHasTag("Player"))
+	{
+		return;
+	}
+
+	ActivateItem(OtherActor);
 }
+
 void ABaseItem::OnItemEndOverlap(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,
 	UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex)
-{	
-
+{
 }
-void ABaseItem::ActivateItem(AActor* Activator)
-{	
-	UParticleSystemComponent* Particle = nullptr;
 
+void ABaseItem::ActivateItem(AActor* Activator)
+{
 	if (PickupParticle)
 	{
-		Particle = UGameplayStatics::SpawnEmitterAtLocation(
+		UGameplayStatics::SpawnEmitterAtLocation(
 			GetWorld(),
 			PickupParticle,
 			GetActorLocation(),
@@ -65,22 +70,8 @@ void ABaseItem::ActivateItem(AActor* Activator)
 			GetActorLocation()
 		);
 	}
-
-	if (Particle)
-	{
-		FTimerHandle DestroyParticleTimerHandle;
-
-		GetWorld()->GetTimerManager().SetTimer(
-			DestroyParticleTimerHandle,
-			[Particle]()
-			{
-				Particle->DestroyComponent();
-			},
-			2.0f,
-			false
-		);
-	}
 }
+
 FName ABaseItem::GetItemtype() const
 {
 	return ItemType;
@@ -90,5 +81,3 @@ void ABaseItem::DestroyItem()
 {
 	Destroy();
 }
-
- 

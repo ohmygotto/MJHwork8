@@ -1,12 +1,10 @@
 #include "MineItem.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystemComponent.h"
-
 
 AMineItem::AMineItem()
 {
-	ExplosionDelay = 3.0f;
+	ExplosionDelay = 1.0f;
 	ExplosionRadius = 300.0f;
 	ExplosionDamage = 30.0f;
 	ItemType = "Mine";
@@ -20,7 +18,17 @@ AMineItem::AMineItem()
 
 void AMineItem::ActivateItem(AActor* Activator)
 {
-	if (bHasExploded) return;
+	if (bHasExploded)
+	{
+		return;
+	}
+
+	if (!Activator || !Activator->ActorHasTag("Player"))
+	{
+		return;
+	}
+
+	bHasExploded = true;
 
 	Super::ActivateItem(Activator);
 
@@ -30,21 +38,19 @@ void AMineItem::ActivateItem(AActor* Activator)
 		&AMineItem::Explode,
 		ExplosionDelay,
 		false
-	); 
+	);
 }
 
 void AMineItem::Explode()
 {
-	UParticleSystemComponent* Particle = nullptr;
-
 	if (ExplosionParticle)
 	{
-		Particle = UGameplayStatics::SpawnEmitterAtLocation(
+		UGameplayStatics::SpawnEmitterAtLocation(
 			GetWorld(),
 			ExplosionParticle,
 			GetActorLocation(),
 			GetActorRotation(),
-			false
+			true
 		);
 	}
 
@@ -76,19 +82,4 @@ void AMineItem::Explode()
 	}
 
 	DestroyItem();
-
-	if (Particle)
-	{
-		FTimerHandle DestroyParticleTimerHandle;
-
-		GetWorld()->GetTimerManager().SetTimer(
-			DestroyParticleTimerHandle,
-			[Particle]()
-			{
-				Particle->DestroyComponent();
-			},
-			2.0f,
-			false
-		);
-	}
 }
